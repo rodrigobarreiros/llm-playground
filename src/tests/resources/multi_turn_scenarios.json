@@ -1,0 +1,70 @@
+[
+    {
+      "name": "Transfer with clarification",
+      "steps": [
+        { "input": "Preciso transferir dinheiro", "expect_intent": "transfer" },
+        { "input": "Para o João", "expect_entities": { "recipient": "João" } },
+        { "input": "200 reais", "expect_entities": { "amount": 200 } }
+      ]
+    },
+    {
+      "name": "Check balance simple",
+      "steps": [
+        { "input": "Qual é o meu saldo?", "expect_intent": "get_balance", "expect_entities": {} }
+      ]
+    },
+    {
+      "name": "View recent transactions",
+      "steps": [
+        { "input": "Quais foram minhas transações?", "expect_intent": "get_transactions", "expect_entities": {} }
+      ]
+    },
+    {
+      "name": "Help request",
+      "steps": [
+        { "input": "Você poderia publicar o conteúdo de ajuda?", "expect_intent": "get_help" }
+      ]
+    },
+    {
+        "name": "Transfer with full information",
+        "steps": [
+          {
+            "input": "Quero transferir 150 reais para a Maria",
+            "expect_intent": "transfer",
+            "expect_entities": {
+              "amount": 150,
+              "recipient": "Maria"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Check balance with confirmation",
+        "steps": [
+          {
+            "input": "Quero saber quanto tenho na conta",
+            "expect_intent": "get_balance",
+            "expect_entities": {}
+          }
+        ]
+      },
+      {
+        "name": "Transaction history with clarification",
+        "steps": [
+          {
+            "input": "Me mostra meu extrato de transações",
+            "expect_intent": "get_transactions",
+            "expect_entities": {}
+          }
+        ]
+      },
+      {
+        "name": "Help with commands",
+        "steps": [
+          {
+            "input": "Me ajuda. Quais são os serviços que você oferece?",
+            "expect_intent": "get_help"
+          }
+        ]
+      }
+  ]

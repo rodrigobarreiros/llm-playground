@@ -1,0 +1,16 @@
+[project]
+name = "llm-intent-assistant"
+version = "0.1.0"
+description = "Intent detection assistant using LLMs"
+authors = [
+    { name="Your Name", email="you@example.com" }
+]
+dependencies = [
+    "transformers",
+    "datasets",
+    "peft",
+    "accelerate",
+    "bitsandbytes",
+    "scikit-learn"
+]
+requires-python = ">=3.8"

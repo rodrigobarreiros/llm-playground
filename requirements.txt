@@ -1,0 +1,11 @@
+transformers
+datasets
+peft
+accelerate
+bitsandbytes
+scikit-learn
+requests
+rich
+pytest
+einops
+lion_pytorch

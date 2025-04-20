@@ -1,0 +1,15 @@
+[
+    {
+      "input": "Quero enviar 500 para João",
+      "expected_intent": "transfer",
+      "expected_entities": {
+        "amount": 500,
+        "recipient": "João"
+      }
+    },
+    {
+      "input": "Qual é o meu saldo?",
+      "expected_intent": "get_balance",
+      "expected_entities": {}
+    }
+  ]

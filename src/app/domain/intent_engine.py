@@ -1,8 +1,9 @@
 import re
 import json
-from app.logger import logger
-from app.llm_client import query_llm
-from app.state_store import get_user_state, update_user_state
+from app.infra.logger import logger
+from typing import Dict, Any, List
+from app.infra.llm_client import query_llm
+from app.domain.state_store import get_user_state, update_user_state
 
 SYSTEM_PROMPT = """
 Você é um assistente financeiro conversando com o usuário.

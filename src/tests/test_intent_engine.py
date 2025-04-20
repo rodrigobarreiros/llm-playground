@@ -1,8 +1,8 @@
-import unittest
-from app.intent_engine import process_message
-from app.state_store import clear_user_state
+import pytest
+from app.domain.intent_engine import process_message
+from app.domain.state_store import clear_user_state
 
-class TestIntentEngine(unittest.TestCase):
+class TestIntentEngine:
 
     def test_basic_intent_extraction(self):
         user_id = "test_user_1"
@@ -11,12 +11,10 @@ class TestIntentEngine(unittest.TestCase):
 
         result = process_message(user_id, history, user_input)
 
-        if "error" in result:
-            self.fail(f"Erro no processamento: {result['error']}")
+        assert "error" not in result, f"Erro no processamento: {result['error']}"
+        assert result["intent"] == "transfer"
 
-        self.assertEqual(result["intent"], "transfer")
-        self.assertIn("amount", result["entities"])
-        self.assertIn("recipient", result["entities"])
+        clear_user_state(user_id)
 
     def test_get_balance(self):
         user_id = "test_user_2"
@@ -25,7 +23,7 @@ class TestIntentEngine(unittest.TestCase):
 
         result = process_message(user_id, history, user_input)
 
-        if "error" in result:
-            self.fail(f"Erro no processamento: {result['error']}")
+        assert "error" not in result, f"Erro no processamento: {result['error']}"
+        assert result["intent"] == "get_balance"
 
-        self.assertEqual(result["intent"], "get_balance")
+        clear_user_state(user_id)

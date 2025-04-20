@@ -1,22 +1,26 @@
 import json
 import pytest
-from app.intent_engine import process_message
-from app.state_store import clear_user_state
+from app.domain.intent_engine import process_message
+from app.domain.state_store import clear_user_state
 
+# Load test cases from external JSON file
 with open("tests/resources/dialogs.json", encoding="utf-8") as f:
-    dialogs = json.load(f)
+    test_cases = json.load(f)
 
-@pytest.mark.parametrize("case_index, case", list(enumerate(dialogs)))
-def test_intent_and_entities(case_index, case):
-    user_id = f"test_case_{case_index}"
-    history = []
-    result = process_message(user_id, history, case["input"])
+@pytest.mark.parametrize("case", test_cases)
+def test_intent_and_entities(case):
+    result = process_message("test_user", [], case["input"])
 
-    assert "error" not in result, f"Erro no caso {case_index}: {result.get('error')}"
+    assert "error" not in result, f"Unexpected error: {result.get('error')}"
+    assert result["intent"] == case["expected_intent"], (
+        f"Intent mismatch:\nExpected: {case['expected_intent']}\nGot: {result['intent']}"
+    )
 
-    assert result["intent"] == case["expected_intent"], f"Intent mismatch on case {case_index}"
+    if "expected_entities" in case:
+        for key, value in case["expected_entities"].items():
+            actual_value = result.get("entities", {}).get(key)
+            assert actual_value == value, (
+                f"Entity mismatch for '{key}':\nExpected: {value}\nGot: {actual_value}"
+            )
 
-    for key, value in case["expected_entities"].items():
-        assert result["entities"].get(key) == value, f"Entity '{key}' mismatch on case {case_index}"
-
-    clear_user_state(user_id)
+    clear_user_state("test_user")

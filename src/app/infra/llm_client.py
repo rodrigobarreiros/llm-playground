@@ -21,4 +21,3 @@ def query_llm(prompt):
         return "Timeout: Ollama demorou demais para responder."
     except requests.exceptions.RequestException as e:
         return f"Erro ao conectar com Ollama: {e}"
-

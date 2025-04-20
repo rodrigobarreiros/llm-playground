@@ -1,5 +1,6 @@
 import unittest
-from app.state_store import get_user_state, update_user_state, clear_user_state
+import pytest
+from app.domain.state_store import get_user_state, update_user_state, clear_user_state
 
 class TestStateStore(unittest.TestCase):
 

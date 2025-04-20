@@ -1,6 +1,6 @@
 # bank_actions.py
 
-from logger import logger
+from app.infra.logger import logger
 
 # Contas simuladas em memória
 accounts = {

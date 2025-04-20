@@ -1,7 +1,7 @@
 import json
 import pytest
-from app.intent_engine import process_message
-from app.state_store import clear_user_state
+from app.domain.intent_engine import process_message
+from app.domain.state_store import clear_user_state
 
 # Load scenarios from external JSON file
 with open("tests/resources/multi_turn_scenarios.json", encoding="utf-8") as f:

@@ -52,45 +52,48 @@ Mensagem atual do usuário:
 {user_input}
 """
 
-def process_message(user_id, history, user_input):
-    user_account_number = 987654321
+class IntentService:
+    def __init__(self, user_account_number: int = 987654321):
+        self.user_account_number = user_account_number
 
-    prompt = SYSTEM_PROMPT.format(
-        history="\n".join(history),
-        user_input=user_input,
-        user_account_number=user_account_number
-    )
+    def process_message(self, user_id: str, history: List[str], user_input: str) -> Dict[str, Any]:
+        """Process a user message and return the intent and entities."""
+        prompt = SYSTEM_PROMPT.format(
+            history="\n".join(history),
+            user_input=user_input,
+            user_account_number=self.user_account_number
+        )
 
-    response = query_llm(prompt)
+        response = query_llm(prompt)
 
-    logger.debug("Prompt:\n", prompt)
-    logger.debug("RAW LLM RESPONSE:\n", response)
+        logger.debug("Prompt:\n", prompt)
+        logger.debug("RAW LLM RESPONSE:\n", response)
 
-    # Tenta encontrar JSON dentro da resposta (mesmo que mal formatado)
-    start = response.find("{")
-    end = response.rfind("}") + 1
+        # Tenta encontrar JSON dentro da resposta (mesmo que mal formatado)
+        start = response.find("{")
+        end = response.rfind("}") + 1
 
-    if start == -1 or end == -1:
-        return {"error": "No JSON block found in response."}
+        if start == -1 or end == -1:
+            return {"error": "No JSON block found in response."}
 
-    json_like = response[start:end]
+        json_like = response[start:end]
 
-    # Correção tosca: adiciona aspas nas chaves
-    json_fixed = re.sub(r'(\s*)(\w+):', r'\1"\2":', json_like)
+        # Correção tosca: adiciona aspas nas chaves
+        json_fixed = re.sub(r'(\s*)(\w+):', r'\1"\2":', json_like)
 
-    try:
-        data = json.loads(json_fixed)
-        # Ensure intent is always present and valid
-        if "intent" not in data or data["intent"] not in ["transfer", "get_balance", "get_transactions", "get_help", "unknown"]:
-            data["intent"] = "unknown"
-        
-        update_user_state(user_id, {
-            "intent": data.get("intent"),
-            "entities": data.get("entities", {}),
-            "missing_entities": data.get("missing_entities", []),
-            "next_question": data.get("next_question")
-        })
-        return data
-    except json.JSONDecodeError as e:
-        logger.debug("JSON error:", e)
-        return {"error": "LLM returned an unexpected format."}
+        try:
+            data = json.loads(json_fixed)
+            # Ensure intent is always present and valid
+            if "intent" not in data or data["intent"] not in ["transfer", "get_balance", "get_transactions", "get_help", "unknown"]:
+                data["intent"] = "unknown"
+            
+            update_user_state(user_id, {
+                "intent": data.get("intent"),
+                "entities": data.get("entities", {}),
+                "missing_entities": data.get("missing_entities", []),
+                "next_question": data.get("next_question")
+            })
+            return data
+        except json.JSONDecodeError as e:
+            logger.debug("JSON error:", e)
+            return {"error": "LLM returned an unexpected format."}

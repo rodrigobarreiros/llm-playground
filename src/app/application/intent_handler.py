@@ -1,14 +1,17 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
+from datetime import datetime, timedelta
+from app.domain.intent_service import IntentService
 from app.application.bank_application_service import BankApplicationService
 
 class IntentHandler:
-    READ_ONLY_INTENTS = {"get_balance", "view_transactions", "get_help", "get_transactions"}
-
-    def __init__(self, user_id: str, user_name: str, assistant_name: str):
-        self.user_id = user_id
-        self.user_name = user_name
-        self.assistant_name = assistant_name
+    def __init__(
+        self,
+        intent_service: IntentService,
+        user_id: str
+    ):
+        self.intent_service = intent_service
         self.bank_service = BankApplicationService()
+        self.user_id = user_id
 
     def handle_transaction(self, intent: str, entities: Dict[str, Any]) -> Tuple[str, str]:
         """Route the intent to the appropriate bank operation and return the response message."""
@@ -59,15 +62,19 @@ class IntentHandler:
         )
         return "transfer_confirmation", summary + "\nVocê confirma essa operação? (sim/não)"
 
-    def handle_transfer_confirmation(self, entities: Dict[str, Any], confirmation: str) -> Tuple[str, str]:
-        """Handle the user's confirmation response for a transfer."""
-        if confirmation.lower() in {"sim", "s", "yes", "y"}:
-            success, message = self.bank_service.transfer(
-                self.user_id,
-                entities.get("account_type", "corrente"),
-                entities.get("recipient"),
-                entities.get("amount")
-            )
-            return "transfer", message
+    def handle_transfer_confirmation(self, entities: Dict[str, Any]) -> Tuple[bool, str, str]:
+        """Handle transfer confirmation."""
+        if not entities.get("amount") or not entities.get("recipient"):
+            return False, "error", "Dados da transferência incompletos."
+
+        transfer_successful = self.bank_service.transfer(
+            self.user_id,
+            entities["amount"],
+            entities["recipient"],
+            entities.get("account_type", "corrente")
+        )
+
+        if transfer_successful:
+            return True, "success", f"Transferência de R${entities['amount']:.2f} para {entities['recipient']} realizada com sucesso!"
         else:
-            return "transfer", "Operação cancelada. Me avise se precisar de mais alguma coisa." 
+            return False, "error", "Não foi possível realizar a transferência. Verifique seu saldo e tente novamente." 

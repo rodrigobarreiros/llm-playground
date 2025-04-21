@@ -27,7 +27,8 @@ def mock_default_entity_manager():
 @pytest.fixture
 def mock_transaction_handler():
     handler = Mock(spec=IntentHandler)
-    handler.handle_transaction = Mock()
+    handler.handle_transaction = Mock(return_value=("get_balance", "Saldo: R$ 1000,00"))
+    handler.handle_transfer_confirmation = Mock(return_value=("transfer", "Transferência realizada com sucesso"))
     return handler
 
 @pytest.fixture
@@ -41,16 +42,20 @@ def conversation_manager(mock_user_session, mock_default_entity_manager, mock_tr
 
 def test_exit_conversation(conversation_manager):
     """Test that the conversation ends when user types exit command."""
-    result = conversation_manager.process_message("exit")
-    assert result is False
+    should_continue, msg_type, message = conversation_manager.process_message("exit")
+    assert should_continue is False
+    assert msg_type is None
+    assert message == "Até logo, Test User!"
     conversation_manager.user_session.add_to_history.assert_called_once()
 
 def test_error_handling(conversation_manager):
     """Test handling of error responses from intent processing."""
     with patch('app.application.conversation_manager.process_message') as mock_process:
         mock_process.return_value = {"error": "Test error"}
-        result = conversation_manager.process_message("test message")
-        assert result is True
+        should_continue, msg_type, message = conversation_manager.process_message("test message")
+        assert should_continue is True
+        assert msg_type == "error"
+        assert message == "Não consegui entender. (Test error)\n"
         mock_process.assert_called_once()
 
 def test_missing_entities_handling(conversation_manager):
@@ -62,8 +67,10 @@ def test_missing_entities_handling(conversation_manager):
             "missing_entities": ["amount"],
             "next_question": "How much?"
         }
-        result = conversation_manager.process_message("transfer money")
-        assert result is True
+        should_continue, msg_type, message = conversation_manager.process_message("transfer money")
+        assert should_continue is True
+        assert msg_type == "warning"
+        assert message == "Missing → ['amount']"
         conversation_manager.user_session.previous_result = mock_process.return_value
 
 def test_previous_missing_entities_handling(conversation_manager):
@@ -78,8 +85,11 @@ def test_previous_missing_entities_handling(conversation_manager):
         mock_process.return_value = {
             "entities": {"amount": 100.0}
         }
-        result = conversation_manager.process_message("100")
-        assert result is True
+        conversation_manager.transaction_handler.handle_transaction.return_value = ("transfer", "Transferência realizada com sucesso")
+        should_continue, msg_type, message = conversation_manager.process_message("100")
+        assert should_continue is True
+        assert msg_type is None
+        assert message == "Transferência realizada com sucesso"
         conversation_manager.transaction_handler.handle_transaction.assert_called_once()
 
 def test_successful_transaction_handling(conversation_manager):
@@ -93,8 +103,11 @@ def test_successful_transaction_handling(conversation_manager):
             "intent": "get_balance",
             "entities": {}
         }
-        result = conversation_manager.process_message("show my balance")
-        assert result is True
+        conversation_manager.transaction_handler.handle_transaction.return_value = ("get_balance", "Saldo: R$ 1000,00")
+        should_continue, msg_type, message = conversation_manager.process_message("show my balance")
+        assert should_continue is True
+        assert msg_type is None
+        assert message == "Saldo: R$ 1000,00"
         conversation_manager.transaction_handler.handle_transaction.assert_called_once_with(
             "get_balance", {"account_type": "corrente"}
         )
@@ -111,8 +124,11 @@ def test_default_entities_application(conversation_manager):
             "intent": "transfer",
             "entities": {"amount": 100.0}
         }
-        result = conversation_manager.process_message("transfer 100")
-        assert result is True
+        conversation_manager.transaction_handler.handle_transaction.return_value = ("transfer", "Transferência realizada com sucesso")
+        should_continue, msg_type, message = conversation_manager.process_message("transfer 100")
+        assert should_continue is True
+        assert msg_type is None
+        assert message == "Transferência realizada com sucesso"
         conversation_manager.default_entity_manager.apply_defaults.assert_called_once()
         conversation_manager.transaction_handler.handle_transaction.assert_called_once()
 
@@ -123,7 +139,68 @@ def test_history_management(conversation_manager):
             "intent": "get_balance",
             "entities": {"account_type": "corrente"}
         }
-        conversation_manager.process_message("show my balance")
+        conversation_manager.transaction_handler.handle_transaction.return_value = ("get_balance", "Saldo: R$ 1000,00")
+        should_continue, msg_type, message = conversation_manager.process_message("show my balance")
+        assert should_continue is True
+        assert msg_type is None
+        assert message == "Saldo: R$ 1000,00"
         conversation_manager.user_session.add_to_history.assert_called_with(
             "Test User: show my balance"
-        ) 
+        )
+
+def test_transfer_confirmation_flow(conversation_manager):
+    """Test the complete transfer confirmation flow."""
+    # First message initiates the transfer
+    with patch('app.application.conversation_manager.process_message') as mock_process:
+        # Mock the initial transfer request
+        mock_process.return_value = {
+            "intent": "transfer",
+            "entities": {
+                "amount": 100.0,
+                "recipient": "Maria",
+                "account_type": "corrente"
+            }
+        }
+        # Mock the default entity manager to return the same entities
+        conversation_manager.default_entity_manager.apply_defaults.return_value = {
+            "amount": 100.0,
+            "recipient": "Maria",
+            "account_type": "corrente"
+        }
+        conversation_manager.transaction_handler.handle_transaction.return_value = (
+            "transfer_confirmation",
+            "Transferência de R$ 100.00 para Maria da sua conta corrente.\nVocê confirma essa operação? (sim/não)"
+        )
+        
+        # Initial transfer request
+        should_continue, msg_type, message = conversation_manager.process_message("transferir 100 para Maria")
+        assert should_continue is True
+        assert msg_type == "transfer_confirmation"
+        assert "Você confirma essa operação?" in message
+        assert conversation_manager.user_session.previous_result == {
+            "intent": "transfer",
+            "entities": {
+                "amount": 100.0,
+                "recipient": "Maria",
+                "account_type": "corrente"
+            }
+        }
+
+        # User confirms the transfer
+        conversation_manager.transaction_handler.handle_transfer_confirmation.return_value = (
+            "transfer",
+            "Transferência realizada com sucesso"
+        )
+        should_continue, msg_type, message = conversation_manager.process_message("sim")
+        assert should_continue is True
+        assert msg_type is None
+        assert message == "Transferência realizada com sucesso"
+        conversation_manager.transaction_handler.handle_transfer_confirmation.assert_called_once_with(
+            {
+                "amount": 100.0,
+                "recipient": "Maria",
+                "account_type": "corrente"
+            },
+            "sim"
+        )
+        assert conversation_manager.user_session.previous_result == {} 

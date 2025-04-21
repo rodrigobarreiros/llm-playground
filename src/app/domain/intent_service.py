@@ -9,7 +9,7 @@ SYSTEM_PROMPT = """
 Você é um assistente financeiro conversando com o usuário.
 
 Sua tarefa é analisar a conversa anterior e a mensagem mais recente do usuário, e retornar um JSON com:
-- intent: a intenção da ação - "transfer" ou "get_balance"
+- intent: a intenção da ação - "transfer", "get_balance", "get_transactions", "get_help" ou "unknown"
 - entities: as entidades extraídas
 - missing_entities: entidades ainda não identificadas
 - next_question: a próxima pergunta necessária para solicitar alguma entidade faltante
@@ -20,8 +20,9 @@ Possíveis intenções são EXCLUSIVAMENTE:
 - "get_balance": quando o usuário quer saber o saldo da conta
 - "get_transactions": quando o usuário quer ver o histórico ou extrato
 - "get_help": quando o usuário pede ajuda ou quer saber os serviços, comandos ou operações que você oferece
+- "unknown": quando você não consegue identificar nenhuma das intenções acima
 
-Identifique sempre a intenção mais apropriada para a mensagem atual.
+Identifique sempre a intenção mais apropriada para a mensagem atual. Se não conseguir identificar nenhuma das intenções específicas, use "unknown".
 
 Atenção:
 - A conversa pode ter múltiplas mensagens. Use o histórico para entender o contexto.
@@ -52,7 +53,6 @@ Mensagem atual do usuário:
 """
 
 def process_message(user_id, history, user_input):
-
     user_account_number = 987654321
 
     prompt = SYSTEM_PROMPT.format(
@@ -64,7 +64,6 @@ def process_message(user_id, history, user_input):
     response = query_llm(prompt)
 
     logger.debug("Prompt:\n", prompt)
-
     logger.debug("RAW LLM RESPONSE:\n", response)
 
     # Tenta encontrar JSON dentro da resposta (mesmo que mal formatado)
@@ -81,6 +80,10 @@ def process_message(user_id, history, user_input):
 
     try:
         data = json.loads(json_fixed)
+        # Ensure intent is always present and valid
+        if "intent" not in data or data["intent"] not in ["transfer", "get_balance", "get_transactions", "get_help", "unknown"]:
+            data["intent"] = "unknown"
+        
         update_user_state(user_id, {
             "intent": data.get("intent"),
             "entities": data.get("entities", {}),

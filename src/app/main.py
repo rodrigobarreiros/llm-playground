@@ -6,7 +6,7 @@ from app.domain.user_session import UserSession
 from app.domain.default_entity_manager import DefaultEntityManager
 from app.application.intent_handler import IntentHandler
 from app.application.conversation_manager import ConversationManager
-from app.ui.console import print_assistant, print_user
+from app.ui.console import ConsoleUI
 
 def main():
     # Configuration
@@ -31,17 +31,9 @@ def main():
         assistant_name=assistant_name
     )
 
-    # Start conversation
-    print()
-    print_assistant(assistant_name, f"Olá {user_name}, como posso te ajudar hoje? (Digite 'sair' para encerrar)")
-
-    try:
-        while True:
-            msg = print_user(user_name).strip()
-            if not conversation_manager.process_message(msg):
-                break
-    except KeyboardInterrupt:
-        print_assistant(assistant_name, f"Até logo, {user_name}!")
+    # Initialize UI and start conversation
+    console_ui = ConsoleUI(assistant_name, user_name)
+    console_ui.start_conversation(conversation_manager.process_message)
 
 if __name__ == "__main__":
     main()

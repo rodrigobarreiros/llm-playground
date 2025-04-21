@@ -2,11 +2,11 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.infra.logger import logger
-from app.domain.state_store import get_user_state
-from app.domain.intent_engine import process_message
-from app.application.bank_actions import execute_action
-from app.ui.ui_console import print_assistant, print_user, print_info, print_warning, print_error
+from app.infra.logger_adapter import logger
+from app.domain.state_repository import get_user_state
+from app.domain.intent_service import process_message
+from app.application.bank_application_service import execute_action
+from app.ui.console import print_assistant, print_user, print_info, print_warning, print_error
 
 assistant_name = "Magie"
 user_id = "rodrigo.barreiros"

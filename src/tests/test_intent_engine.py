@@ -1,6 +1,6 @@
 import pytest
-from app.domain.intent_engine import process_message
-from app.domain.state_store import clear_user_state
+from app.domain.intent_service import process_message
+from app.domain.state_repository import clear_user_state
 
 class TestIntentEngine:
 

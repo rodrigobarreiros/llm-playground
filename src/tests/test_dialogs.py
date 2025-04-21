@@ -1,7 +1,7 @@
 import json
 import pytest
-from app.domain.intent_engine import process_message
-from app.domain.state_store import clear_user_state
+from app.domain.intent_service import process_message
+from app.domain.state_repository import clear_user_state
 
 # Load test cases from external JSON file
 with open("tests/resources/dialogs.json", encoding="utf-8") as f:

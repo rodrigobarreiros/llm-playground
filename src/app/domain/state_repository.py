@@ -1,6 +1,6 @@
 # state_store.py
 
-# In-memory dictionary to track state per user
+# In-memory repository to track state per user
 state = {}
 
 def get_user_state(user_id):
